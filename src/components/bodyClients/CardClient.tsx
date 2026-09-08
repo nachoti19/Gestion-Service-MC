@@ -23,14 +23,20 @@ function CardClient({ client }: Props) {
             <i className="bi bi-telephone-fill me-1"></i>
             {client.celular}
           </p>
-          <p className="card-text">
-            <i className="bi bi-building-fill"></i>
-            {client.observacion}
-          </p>
+          {client.observacion && (
+            <p className="card-text">
+              <i className="bi bi-building-fill"></i>
+              {client.observacion}
+            </p>
+          )}
+
           <div>
-            <a href="#" className="btn btn-primary me-1">
-              Ver más
-            </a>
+            <NavLink
+              className="btn btn-primary me-1"
+              to={`/client/${client.id}`}
+            >
+              ver mas
+            </NavLink>
             <NavLink
               className="btn btn-primary me-1"
               to={`/client/edit/${client.id}`}

@@ -1,8 +1,5 @@
 import "./ItemCard.css";
 import type { Item } from "../../models/Item";
-import { useState } from "react";
-import IndexEditForm from "./IndexForm";
-import IndexModal from "../modal/Index";
 import { NavLink } from "react-router-dom";
 
 type Props = {
@@ -11,30 +8,29 @@ type Props = {
 };
 
 function ItemCard({ item, isSelling }: Props) {
-  const [edit, setEdit] = useState(false);
   return (
     <>
       <div className="col pt-4">
         <div className="card h-100 shadow-sm">
           <img
-            src={item.imagen}
-            className="img-fluid card-img-top w-100"
+            src={item.url_image}
+            className="img-fluid card-img-top w-100 h-100"
             alt="Logo"
             style={{ height: "200px", objectFit: "contain" }}
           />
           <div className="card-body">
-            <h4 className="card-title">{item.nombre}</h4>
+            <h4 className="card-title">{item.name}</h4>
             <h6>{item.id}</h6>
-            <h5>{item.precio}</h5>
-            <h5>{item.equipo}</h5>
-            <h4>Stock disponible: {item.stock}</h4>
-            <NavLink to={`/stock/edit/${item.id}`}>editar</NavLink>
-            <button
+            <h5>{item.price}</h5>
+            <h5>{item.type}</h5>
+            <h4>Stock disponible: {item.quantity}</h4>
+            <NavLink
+              to={`/stock/edit/${item.id}`}
               className="btn btn-success me-1"
-              onClick={() => setEdit(true)}
+              state={{ item }}
             >
-              Editar
-            </button>
+              editar
+            </NavLink>
             {isSelling && (
               <button className="btn btn-primary me-1" type="button">
                 Agregar al carrito
@@ -43,11 +39,6 @@ function ItemCard({ item, isSelling }: Props) {
           </div>
         </div>
       </div>
-      {edit && (
-        <IndexModal>
-          <IndexEditForm item={item} edit={true} />
-        </IndexModal>
-      )}
     </>
   );
 }

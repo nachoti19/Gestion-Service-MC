@@ -141,7 +141,8 @@ function IndexForm({ onClose }: Props) {
             name="equipo"
             id="inputState"
             className="form-select"
-            value="nombre"
+            value={formData.equipo}
+            onChange={handleChange}
           >
             <option value="">Elija una opción</option>
             <option value="Horno Eléctrico">Horno eléctrico</option>

@@ -144,7 +144,7 @@ const Index = () => {
         </div>
       </form>
       {showItems && (
-        <IndexModal OnClose={() => setShowItems(false)}>
+        <IndexModal>
           <IndexItems />
         </IndexModal>
       )}

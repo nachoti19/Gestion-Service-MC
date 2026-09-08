@@ -19,7 +19,7 @@ function Index({}: Props) {
         ))}
       </div>
       {showForm && (
-        <ModalIndex OnClose={() => setShowForm(false)}>
+        <ModalIndex>
           <IndexForm onClose={() => setShowForm(false)} />
         </ModalIndex>
       )}

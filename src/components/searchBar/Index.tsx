@@ -1,3 +1,5 @@
+import "./Index.css";
+
 type Action = "stock" | "client" | "record";
 
 type Props = {
@@ -9,7 +11,7 @@ type Props = {
 
 function Index({ actions, onAdd, isSelling = false, onToggleSell }: Props) {
   return (
-    <nav className="navbar bg-body-tertiary">
+    <nav className="navbar">
       <div className="container-fluid p-0">
         <div>
           {actions && actions.includes("stock") && (
