@@ -14,12 +14,16 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-
       preload: path.join(__dirname, "electron", "preload.cjs"),
     },
   });
 
-  win.loadFile(path.join(__dirname, "dist", "index.html"));
+  if (process.env.ELECTRON_DEV === "true") {
+    win.loadURL("http://localhost:5173");
+    win.webContents.openDevTools();
+  } else {
+    win.loadFile(path.join(__dirname, "dist", "index.html"));
+  }
 }
 
 app.whenReady().then(() => {
@@ -36,8 +40,45 @@ app.whenReady().then(() => {
 //  SECCION STOCK
 //=================================
 
-//Solicitamos los items
+//FUNCION PARA GUARDAR LA IMAGEN...
 
+function guardarImagen(originalImage) {
+  if (!originalImage) {
+    console.log("No se recibió ninguna imagen");
+    return null;
+  }
+
+  const imagesPath = path.join(app.getPath("userData"), "images");
+
+  // Crear carpeta si no existe
+  if (!fs.existsSync(imagesPath)) {
+    fs.mkdirSync(imagesPath, { recursive: true });
+  }
+
+  // Obtener extensión
+  const extension = path.extname(originalImage).toLowerCase();
+
+  // Crear nombre único
+  const imageName = `${crypto.randomUUID()}${extension}`;
+
+  // Ruta final donde se va a guardar
+  const destinationPath = path.join(imagesPath, imageName);
+
+  console.log("Imagen original:", originalImage);
+  console.log("Destino:", destinationPath);
+
+  // Copiar imagen
+  fs.copyFileSync(originalImage, destinationPath);
+
+  console.log("Imagen guardada correctamente:", imageName);
+
+  // IMPORTANTE:
+  // devolvemos solamente el nombre,
+  // NO la ruta completa
+  return imageName;
+}
+
+//Solicitamos los items
 ipcMain.handle("item:getAll", () => {
   const result = db
     .prepare(
@@ -55,13 +96,19 @@ ipcMain.handle("item:add", (event, item) => {
 
   const { name, price, quantity, type, url_image } = item;
 
+  let imageName = "image";
+
+  if (url_image) {
+    imageName = guardarImagen(url_image);
+  }
+
   const result = db
     .prepare(
       `
     INSERT INTO item (
     name , price, quantity, type, url_image) VALUES (?, ?, ?, ?, ?)`,
     )
-    .run(name, price, quantity, type, url_image);
+    .run(name, price, quantity, type, imageName);
 
   console.log("item agregado correctamente: ", result.lastInsertRowid);
 
@@ -71,27 +118,71 @@ ipcMain.handle("item:add", (event, item) => {
 //Actualizar item
 
 ipcMain.handle("item:update", (event, item) => {
-  console.log("actualizando item: ", item);
+  try {
+    console.log("========== UPDATE ITEM ==========");
+    console.log("Item recibido:", item);
 
-  const { id, name, price, quantity, type, url_image } = item;
+    const { id, name, price, quantity, type, url_image, old_url_image } = item;
 
-  const result = db
-    .prepare(
-      `
-    UPDATE item 
-    SET 
-      name = ?, 
-      price = ?, 
-      quantity = ?, 
-      type = ?, 
-      url_image = ? 
-    WHERE id = ?`,
-    )
-    .run(name, price, quantity, type, url_image, id);
+    let imageName = old_url_image || "imagen";
 
-  console.log("item actualizado", result.changes);
+    // Si se seleccionó una imagen nueva
+    if (url_image && url_image !== old_url_image) {
+      console.log("Se detectó una imagen nueva");
 
-  return { changes: result.changes };
+      const nuevaImagen = guardarImagen(url_image);
+
+      if (!nuevaImagen) {
+        throw new Error("No se pudo guardar la nueva imagen");
+      }
+
+      imageName = nuevaImagen;
+
+      console.log("Nueva imagen guardada:", imageName);
+
+      // Eliminar imagen anterior
+      if (old_url_image && old_url_image !== "imagen") {
+        const oldImagePath = path.join(
+          app.getPath("userData"),
+          "images",
+          old_url_image,
+        );
+
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+
+          console.log("Imagen anterior eliminada:", oldImagePath);
+        }
+      }
+    }
+
+    console.log("Imagen que se guardará en SQLite:", imageName);
+
+    const result = db
+      .prepare(
+        `
+      UPDATE item
+      SET
+        name = ?,
+        price = ?,
+        quantity = ?,
+        type = ?,
+        url_image = ?
+      WHERE id = ?
+    `,
+      )
+      .run(name, price, quantity, type, imageName, id);
+
+    console.log("Cambios realizados:", result.changes);
+
+    return {
+      changes: result.changes,
+    };
+  } catch (error) {
+    console.error("ERROR EN UPDATE ITEM:", error);
+
+    throw error;
+  }
 });
 
 //Eliminar item
@@ -126,24 +217,9 @@ ipcMain.handle("image:select", async () => {
 
   const originalImage = result.filePaths[0];
 
-  const imagePath = path.join(app.getPath("userData"), "images");
+  console.log("Imagen seleccionada:", originalImage);
 
-  if (!fs.existsSync(imagePath)) {
-    fs.mkdirSync(imagePath, { recursive: true });
-  }
-
-  const extend = path.extname(originalImage).toLowerCase();
-
-  const imageName = `${crypto.randomUUID()}${extend}`;
-
-  const destinationPath = path.join(imagePath, imageName);
-
-  fs.copyFileSync(originalImage, destinationPath);
-
-  console.log("Imagen guardada en:", destinationPath);
-  console.log("Nombre guardado en DB:", imageName);
-
-  return imageName;
+  return originalImage;
 });
 
 ipcMain.handle("image:getData", (event, imageName) => {

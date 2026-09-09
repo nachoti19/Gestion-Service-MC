@@ -7,4 +7,5 @@ export type Item = {
   quantity: number;
   type: string;
   url_image: string;
+  imageData?: string;
 };

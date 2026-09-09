@@ -13,10 +13,13 @@ function ItemCard({ item, isSelling }: Props) {
       <div className="col pt-4">
         <div className="card h-100 shadow-sm">
           <img
-            src={item.url_image}
-            className="img-fluid card-img-top w-100 h-100"
-            alt="Logo"
-            style={{ height: "200px", objectFit: "contain" }}
+            src={item.imageData || ""}
+            className="m-0 img-fluid card-img-top w-100"
+            alt={item.name}
+            style={{
+              height: "300px",
+              objectFit: "fill",
+            }}
           />
           <div className="card-body">
             <h4 className="card-title">{item.name}</h4>

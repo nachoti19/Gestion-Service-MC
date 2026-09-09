@@ -31,6 +31,7 @@ declare global {
         quantity: number;
         type: string;
         url_image: string;
+        old_url_image: string;
       }) => Promise<{ changes: number }>;
 
       deleteItem: (id: number) => Promise<{

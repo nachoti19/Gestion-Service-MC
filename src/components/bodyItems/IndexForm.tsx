@@ -12,6 +12,8 @@ function IndexForm({ OnClose }: Props) {
   const itemEditar = location.state?.item;
   const esEdicion = Boolean(itemEditar);
 
+  console.log(esEdicion);
+
   const [formData, setFormData] = useState({
     name: "",
     price: 0,
@@ -46,6 +48,10 @@ function IndexForm({ OnClose }: Props) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    console.log("esEdicion:", esEdicion);
+    console.log("itemEditar:", itemEditar);
+    console.log("formData:", formData);
+
     try {
       if (esEdicion) {
         console.log("Guardando cambios del item existente:", formData);
@@ -56,8 +62,9 @@ function IndexForm({ OnClose }: Props) {
           quantity: Number(formData.quantity),
           type: formData.type,
           url_image: formData.url_image,
+          old_url_image: itemEditar.url_image || "imagen",
         });
-        // Más adelante hacemos el UPDATE en SQLite.
+        console.log("item actualizado", result);
       } else {
         const result = await window.electronAPI.addItem({
           name: formData.name,
@@ -87,6 +94,29 @@ function IndexForm({ OnClose }: Props) {
       OnClose();
     } else {
       navigate("/stock");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!itemEditar) return;
+
+    const confirmar = window.confirm(
+      `Esta seguro que quiere eliminar el item "${itemEditar.name}"`,
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const result = await window.electronAPI.deleteItem(itemEditar.id);
+
+      if (result.changes > 0) {
+        console.log("se elimino el item");
+        navigate("/stock");
+      } else {
+        console.log("no se encontro el item");
+      }
+    } catch (error) {
+      console.log("error al eliminar el item", error);
     }
   };
 
@@ -218,9 +248,22 @@ function IndexForm({ OnClose }: Props) {
             Cancelar
           </button>
         ) : (
-          <NavLink to="/stock" className="btn btn-danger">
-            Cancelar
-          </NavLink>
+          <>
+            <NavLink
+              to="/stock"
+              className="btn btn-danger me-1"
+              onClick={handleCancel}
+            >
+              cancelar
+            </NavLink>
+            <button
+              className="btn btn-danger"
+              type="button"
+              onClick={handleDelete}
+            >
+              Eliminar
+            </button>
+          </>
         )}
       </form>
     </div>

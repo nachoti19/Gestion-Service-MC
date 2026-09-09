@@ -16,14 +16,12 @@ const Index = () => {
 
       const ItemsFromDB: Item[] = await Promise.all(
         itemsDB.map(async (item) => {
-          let image = "";
+          let imageData = "";
 
           if (item.url_image && item.url_image !== "imagen") {
-            const imageData = await window.electronAPI.getImageData(
-              item.url_image,
-            );
-            if (imageData) {
-              image = imageData;
+            const data = await window.electronAPI.getImageData(item.url_image);
+            if (data) {
+              imageData = data;
             }
           }
 
@@ -32,7 +30,8 @@ const Index = () => {
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-            url_image: image,
+            url_image: item.url_image,
+            imageData: imageData,
             type: item.type,
           };
         }),
