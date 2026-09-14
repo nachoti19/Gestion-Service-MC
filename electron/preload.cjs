@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   //=======================
-  //      STOCK
+  //      ITEM
   //=======================
   getAllItems: () => {
     return ipcRenderer.invoke("item:getAll");
@@ -20,7 +20,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return ipcRenderer.invoke("item:delete", id);
   },
 
-  //Seccion imagen de stock
   selectImage: () => {
     return ipcRenderer.invoke("image:select");
   },
@@ -29,6 +28,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return ipcRenderer.invoke("image:getData", imageName);
   },
 
-  //fin seccion imagen
-  //fin stock
+  //=======================
+  // CLIENTE
+  //=======================
+
+  getAllClients: () => {
+    return ipcRenderer.invoke("client:getAll");
+  },
+
+  addClient: (client) => {
+    return ipcRenderer.invoke("client:add", client);
+  },
+
+  updateClient: (client) => {
+    return ipcRenderer.invoke("client:update", client);
+  },
+
+  deleteClient: (id) => {
+    return ipcRenderer.invoke("item:delete", id);
+  },
 });

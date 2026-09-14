@@ -29,9 +29,9 @@ function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         name TEXT NOT NULL, 
         surname TEXT NOT NULL, 
-        number INTEGER NOT NULL, 
+        phone INTEGER NOT NULL, 
         adress TEXT NOT NULL, 
-        details TEXT NOT NULL, 
+        details TEXT, 
         city TEXT DEFAULT 'tandil'
         );`);
 

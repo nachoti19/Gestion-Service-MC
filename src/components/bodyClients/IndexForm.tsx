@@ -13,23 +13,23 @@ function IndexForm({ onClose }: Props) {
   const esEdicion = Boolean(clienteEditar);
 
   const [formData, setFormData] = useState({
-    nombre: "",
-    apellido: "",
-    direccion: "",
-    celular: "",
-    observacion: "",
-    equipo: "",
+    name: "",
+    surname: "",
+    phone: "",
+    adress: "",
+    details: "",
+    city: "",
   });
 
   useEffect(() => {
     if (clienteEditar) {
       setFormData({
-        nombre: clienteEditar.nombre || "",
-        apellido: clienteEditar.apellido || "",
-        direccion: clienteEditar.direccion || "",
-        celular: clienteEditar.celular || "",
-        observacion: clienteEditar.observacion || "",
-        equipo: clienteEditar.equipo || "",
+        name: clienteEditar.name || "",
+        surname: clienteEditar.surname || "",
+        adress: clienteEditar.adress || "",
+        phone: clienteEditar.phone || "",
+        details: clienteEditar.details || "",
+        city: clienteEditar.city || "",
       });
     }
   }, [clienteEditar]);
@@ -44,19 +44,45 @@ function IndexForm({ onClose }: Props) {
     }));
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (esEdicion) {
-      console.log("Guardando cambios del cliente existente:", formData);
-      // Lógica para actualizar en BD o estado local...
-    } else {
-      console.log("Creando nuevo cliente:", formData);
-      // Lógica para guardar nuevo cliente...
-    }
+    try {
+      if (esEdicion) {
+        console.log("Guardando cambios del cliente:", formData);
 
-    // Al finalizar, navegamos de regreso a la lista de clientes
-    navigate("/client");
+        const result = await window.electronAPI.updateClient({
+          id: clienteEditar.id,
+          name: formData.name,
+          surname: formData.surname,
+          phone: Number(formData.phone),
+          adress: formData.adress,
+          details: formData.details,
+          city: formData.city,
+        });
+
+        console.log("Cliente actualizado:", result);
+      } else {
+        const result = await window.electronAPI.addClient({
+          name: formData.name,
+          surname: formData.surname,
+          phone: Number(formData.phone),
+          adress: formData.adress,
+          details: formData.details,
+          city: formData.city,
+        });
+
+        console.log("Cliente agregado:", result);
+      }
+
+      if (onClose) {
+        onClose();
+      } else {
+        navigate("/client");
+      }
+    } catch (error) {
+      console.error("Error al guardar el cliente:", error);
+    }
   };
 
   const handleCancel = () => {
@@ -77,10 +103,10 @@ function IndexForm({ onClose }: Props) {
         <div className="mb-3">
           <label className="form-label">Nombre</label>
           <input
-            name="nombre"
+            name="name"
             type="text"
             className="form-control"
-            value={formData.nombre}
+            value={formData.name}
             onChange={handleChange}
           />
         </div>
@@ -88,10 +114,10 @@ function IndexForm({ onClose }: Props) {
         <div className="mb-3">
           <label className="form-label">Apellido</label>
           <input
-            name="apellido"
+            name="surname"
             type="text"
             className="form-control"
-            value={formData.apellido}
+            value={formData.surname}
             onChange={handleChange}
           />
         </div>
@@ -99,10 +125,10 @@ function IndexForm({ onClose }: Props) {
         <div className="mb-3">
           <label className="form-label">Direccion</label>
           <input
-            name="direccion"
+            name="adress"
             type="text"
             className="form-control"
-            value={formData.direccion}
+            value={formData.adress}
             onChange={handleChange}
           />
         </div>
@@ -111,10 +137,10 @@ function IndexForm({ onClose }: Props) {
           <label className="form-label">Celular</label>
 
           <input
-            name="celular"
+            name="phone"
             type="number"
             className="form-control"
-            value={formData.celular}
+            value={formData.phone}
             onChange={handleChange}
           />
         </div>
@@ -123,10 +149,10 @@ function IndexForm({ onClose }: Props) {
           <label className="form-label">Observaciones (para la casa)</label>
 
           <input
-            name="observacion"
+            name="details"
             type="text"
             className="form-control"
-            value={formData.observacion}
+            value={formData.details}
             onChange={handleChange}
           />
         </div>
@@ -136,12 +162,10 @@ function IndexForm({ onClose }: Props) {
             Aca cuando tenga la base de datos se van a mostrar los equipos que
             tiene el cliente
           </label>
-
           <select
             name="equipo"
             id="inputState"
             className="form-select"
-            value={formData.equipo}
             onChange={handleChange}
           >
             <option value="">Elija una opción</option>
@@ -150,27 +174,27 @@ function IndexForm({ onClose }: Props) {
             <option value="Televisor">Televisor</option>
           </select>
         </div>
-      </form>
-      <div>
-        <NavLink to="/client" className="btn btn-success me-1">
-          {esEdicion ? "Guardar Cambios" : "Guardar"}
-        </NavLink>
-
-        {onClose ? (
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={handleCancel}
-            data-bs-dismiss="modal"
-          >
-            Cancelar
+        <div>
+          <button type="submit" className="btn btn-success me-1">
+            {esEdicion ? "Guardar Cambio" : "Agregar Cliente"}
           </button>
-        ) : (
-          <NavLink to="/client" className="btn btn-danger">
-            Cancelar
-          </NavLink>
-        )}
-      </div>
+
+          {onClose ? (
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={handleCancel}
+              data-bs-dismiss="modal"
+            >
+              Cancelar
+            </button>
+          ) : (
+            <NavLink to="/client" className="btn btn-danger">
+              Cancelar
+            </NavLink>
+          )}
+        </div>
+      </form>
     </div>
   );
 }

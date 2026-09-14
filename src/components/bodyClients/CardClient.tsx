@@ -13,20 +13,20 @@ function CardClient({ client }: Props) {
       <div className="card h-100 shadow-sm">
         <div className="card-body d-flex flex-column justify-content-between">
           <h5 className="card-title">
-            {client.nombre} {client.apellido}
+            {client.name} {client.surname}
           </h5>
           <p className="card-text">
             <i className="bi bi-geo-alt-fill me-1"></i>
-            {client.direccion}
+            {client.adress}
           </p>
           <p className="card-text">
             <i className="bi bi-telephone-fill me-1"></i>
-            {client.celular}
+            {client.phone}
           </p>
-          {client.observacion && (
+          {client.details && (
             <p className="card-text">
               <i className="bi bi-building-fill"></i>
-              {client.observacion}
+              {client.details}
             </p>
           )}
 

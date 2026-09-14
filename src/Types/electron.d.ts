@@ -3,6 +3,8 @@ export {};
 declare global {
   interface Window {
     electronAPI: {
+      //INICIO SECCION ITEMS
+
       addItem: (item: {
         name: string;
         price: number;
@@ -41,6 +43,43 @@ declare global {
       selectImage: () => Promise<string | null>;
 
       getImageData: (nombreImage: string) => Promise<string | null>;
+
+      //INICIO DE SECCION DE CLIENTES
+
+      addClient: (client: {
+        name: string;
+        surname: string;
+        phone: number;
+        adress: string;
+        details: string;
+        city: string;
+      }) => Promise<{
+        id: number;
+      }>;
+
+      getAllClients: () => Promise<
+        {
+          id: number;
+          name: string;
+          surname: string;
+          phone: number;
+          adress: string;
+          details: string;
+          city: string;
+        }[]
+      >;
+
+      updateClient: (client: {
+        id: number;
+        name: string;
+        surname: string;
+        phone: number;
+        adress: string;
+        details: string;
+        city: string;
+      }) => Promise<{ changes: number }>;
+
+      deleteClient: (id: number) => Promise<{ changes: number }>;
     };
   }
 }
