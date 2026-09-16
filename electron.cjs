@@ -6,6 +6,7 @@ const path = require("path");
 const { db, dbPath } = require("./electron/database.cjs");
 const { registerItemHandlers } = require("./electron/Item.cjs");
 const { registerClientHandler } = require("./electron/Client.cjs");
+const { registerApplianceHandler } = require("./electron/Appliance.cjs");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -31,6 +32,7 @@ app.whenReady().then(() => {
 
   registerItemHandlers();
   registerClientHandler();
+  registerApplianceHandler();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -45,6 +45,30 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   deleteClient: (id) => {
-    return ipcRenderer.invoke("item:delete", id);
+    return ipcRenderer.invoke("client:delete", id);
+  },
+
+  //=======================
+  // ELECTRODOMESTICO
+  //=======================
+
+  getAllAppliance: () => {
+    return ipcRenderer.invoke("appliance:getAll");
+  },
+
+  addAppliance: (appliance) => {
+    return ipcRenderer.invoke("appliance:add", appliance);
+  },
+
+  updateAppliance: (appliance) => {
+    return ipcRenderer.invoke("appliance:update", appliance);
+  },
+
+  deleteAppliance: (id) => {
+    return ipcRenderer.invoke("appliance:delete", id);
+  },
+
+  getApplianceByClient: (client_id) => {
+    return ipcRenderer.invoke("appliance:getByClient", client_id);
   },
 });

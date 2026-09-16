@@ -93,6 +93,32 @@ function IndexForm({ onClose }: Props) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!clienteEditar) {
+      console.log("no hay cliente para eliminar", clienteEditar);
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `Esta seguro que quiere eliminar el cliente "${clienteEditar.name} ${clienteEditar.surname}"`,
+    );
+
+    if (!confirmar) return;
+
+    try {
+      const result = await window.electronAPI.deleteClient(clienteEditar.id);
+
+      if (result.changes > 0) {
+        console.log("se elimino el cliente");
+        navigate("/client");
+      } else {
+        console.log("no se encontro el cliente");
+      }
+    } catch (error) {
+      console.log("error al borrar el cliente", clienteEditar);
+    }
+  };
+
   return (
     <div className="p-4">
       <h1 className="modal-title fs-5">
@@ -158,6 +184,18 @@ function IndexForm({ onClose }: Props) {
         </div>
 
         <div className="mb-3">
+          <label className="form-label">Ciudad</label>
+
+          <input
+            name="city"
+            type="text"
+            className="form-control"
+            value={formData.city}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="mb-3">
           <label htmlFor="inputState" className="form-label">
             Aca cuando tenga la base de datos se van a mostrar los equipos que
             tiene el cliente
@@ -189,10 +227,18 @@ function IndexForm({ onClose }: Props) {
               Cancelar
             </button>
           ) : (
-            <NavLink to="/client" className="btn btn-danger">
+            <NavLink to="/client" className="btn btn-danger me-1">
               Cancelar
             </NavLink>
           )}
+
+          <button
+            className="btn btn-danger me-1"
+            type="button"
+            onClick={handleDelete}
+          >
+            Eliminar
+          </button>
         </div>
       </form>
     </div>

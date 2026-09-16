@@ -64,6 +64,8 @@ function registerClientHandler() {
     DELETE FROM client WHERE id = ?`,
       )
       .run(id);
+
+    console.log("DELETE result:", result);
     return { changes: result.changes };
   });
   //EVENTOS DE ELECTRON

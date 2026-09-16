@@ -2,6 +2,7 @@ import CardClient from "./CardClient";
 import type { Client } from "../../models/Client";
 import NavSearch from "../searchBar/Index";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import IndexForm from "./IndexForm";
 import ModalIndex from "../modal/Index";
 
@@ -10,7 +11,7 @@ type Props = {};
 function Index({}: Props) {
   const [showForm, setShowForm] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
-
+  const location = useLocation();
   const loadClients = async () => {
     const clientDB = await window.electronAPI.getAllClients();
 
@@ -31,7 +32,7 @@ function Index({}: Props) {
   };
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [location.key]);
   return (
     <>
       <h1>CUERPO DE CLIENTES</h1>

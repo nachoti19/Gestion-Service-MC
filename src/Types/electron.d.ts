@@ -79,7 +79,47 @@ declare global {
         city: string;
       }) => Promise<{ changes: number }>;
 
-      deleteClient: (id: number) => Promise<{ changes: number }>;
+      deleteClient: (id: number) => Promise<{
+        changes: number;
+      }>;
+
+      //INICIO SECCION ELECTRODOMESTICOS
+      addAppliance: (appliance: {
+        brand: string;
+        model: string;
+        serial_number: string;
+        client_id: number;
+      }) => Promise<{ id: number }>;
+
+      getAllAppliance: () => Promise<
+        {
+          id: number;
+          brand: string;
+          model: string;
+          serial_number: string;
+          client_id: number;
+        }[]
+      >;
+
+      updateAppliance: (appliance: {
+        id: number;
+        brand: string;
+        model: string;
+        serial_number: string;
+        client_id: number;
+      }) => Promise<{ id: number }>;
+
+      deleteAppliance: (id: number) => Promise<{ changes: number }>;
+
+      getApplianceByClient: (client_id: number) => Promise<
+        {
+          id: number;
+          brand: string;
+          model: string;
+          serial_number: string;
+          client_id: number;
+        }[]
+      >;
     };
   }
 }
