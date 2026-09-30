@@ -24,7 +24,7 @@ function registerClientHandler() {
     INSERT INTO client (
     name, surname, phone, adress, details, city) VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(name, surname, phone, adress, details, city);
+      .run(name, surname, phone, adress, details, city?.trim() || "Tandil");
 
     console.log("cliente agregado: ", client);
 
@@ -68,6 +68,12 @@ function registerClientHandler() {
     console.log("DELETE result:", result);
     return { changes: result.changes };
   });
+
+  ipcMain.handle("client:getById", (event, id) => {
+    const result = db.prepare(`SELECT * FROM client WHERE id = ?`).get(id);
+    return result;
+  });
+
   //EVENTOS DE ELECTRON
 
   app.on("window-all-closed", () => {

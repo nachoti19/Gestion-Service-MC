@@ -13,6 +13,7 @@ function initializeDatabase() {
   db.exec(`
         CREATE TABLE IF NOT EXISTS appliance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
         brand TEXT NOT NULL, 
         model TEXT, 
         serial_number TEXT NOT NULL, 
@@ -20,7 +21,8 @@ function initializeDatabase() {
         
         FOREIGN KEY (client_id)
             REFERENCES client(id)
-        ON UPDATE CASCADE);`);
+        ON UPDATE CASCADE
+        ON DELETE CASCADE);`);
 
   //TABLE : CLIENT
 
@@ -32,7 +34,7 @@ function initializeDatabase() {
         phone INTEGER NOT NULL, 
         adress TEXT NOT NULL, 
         details TEXT, 
-        city TEXT DEFAULT 'tandil'
+        city TEXT NOT NULL DEFAULT 'tandil'
         );`);
 
   //TABLE : ITEM

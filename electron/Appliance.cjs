@@ -16,15 +16,15 @@ function registerApplianceHandler() {
   ipcMain.handle("appliance:add", (event, appliance) => {
     console.log("Electrodomestico recibido desde react: ", appliance);
 
-    const { brand, model, serial_number, client_id } = appliance;
+    const { type, brand, model, serial_number, client_id } = appliance;
 
     const result = db
       .prepare(
         `
             INSERT INTO appliance(
-            brand, model, serial_number, client_id) VALUES (?, ?, ?, ?)`,
+            type, brand, model, serial_number, client_id) VALUES (?, ?, ?, ?, ?)`,
       )
-      .run(brand, model, serial_number, client_id);
+      .run(type, brand, model, serial_number, client_id);
     console.log("electrodomestico agregado: ", appliance);
 
     return { id: result.lastInsertRowid };
@@ -32,18 +32,19 @@ function registerApplianceHandler() {
 
   ipcMain.handle("appliance:update", (event, appliance) => {
     try {
-      const { id, brand, model, serial_number, client_id } = appliance;
+      const { id, type, brand, model, serial_number, client_id } = appliance;
 
       const result = db
         .prepare(
           `UPDATE appliance SET
+          type =?,
             brand = ?,
             model = ?,
             serial_number = ?,
-            client_id = ?,
+            client_id = ?
             WHERE id = ?`,
         )
-        .run(id, brand, model, serial_number, client_id);
+        .run(type, brand, model, serial_number, client_id, id);
 
       console.log("cambios realizados: ", result.changes);
       return { changes: result.changes };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Appliance } from "../../models/Appliance";
+import { NavLink } from "react-router-dom";
 
 type Props = {
   client: number;
@@ -15,6 +16,7 @@ function ApplianceList({ client }: Props) {
       applianceDB.map(async (appliance) => {
         return {
           id: appliance.id,
+          type: appliance.type,
           brand: appliance.brand,
           model: appliance.model,
           serial_number: appliance.serial_number,
@@ -27,6 +29,23 @@ function ApplianceList({ client }: Props) {
   useEffect(() => {
     loadAppliance();
   });
+
+  const handleDelete = async (appliance: Appliance) => {
+    const confirmar = window.confirm(
+      `¿Está seguro que quiere eliminar el electrodomestico "${appliance}"`,
+    );
+    if (!confirmar) return;
+
+    try {
+      const result = await window.electronAPI.deleteAppliance(appliance.id);
+
+      if (result.changes > 0) {
+        console.log("Se eliminó el electrodomestico");
+      }
+    } catch (error) {
+      console.log("Error al borrar el electrodomestico", error);
+    }
+  };
 
   return (
     <>
@@ -42,17 +61,17 @@ function ApplianceList({ client }: Props) {
                 aria-expanded="true"
                 aria-controls={`appliance-${appliance.id}`}
               >
-                {appliance.brand} - {appliance.model}
+                {appliance.type} - {appliance.brand}
               </button>
             </h2>
             <div
               id={`appliance-${appliance.id}`}
-              className="accordion-collapse collapse show"
+              className="accordion-collapse collapse"
             >
               <div className="accordion-body">
-                <h3>{appliance.brand}</h3>
-                <h5>{appliance.model}</h5>
-                <h5>{appliance.serial_number}</h5>
+                <h5>Marca: {appliance.brand}</h5>
+                <h5>Modelo: {appliance.model}</h5>
+                <h5>Numero de serie: {appliance.serial_number}</h5>
                 <div className="d-flex justify-content-between">
                   <h6>Historial de Reparaciones</h6>
                   <button className="btn btn-primary">
@@ -67,8 +86,20 @@ function ApplianceList({ client }: Props) {
                   <li className="list-group-item">And a fifth one</li>
                 </ul>
               </div>
-              <button className="btn btn-success m-2">Editar</button>
-              <button className="btn btn-danger m-2">Eliminar</button>
+              <NavLink
+                className="btn btn-success m-2"
+                to={`/client/${client}/appliance/${appliance.id}/edit`}
+                state={{ appliance }}
+              >
+                Editar
+              </NavLink>
+              <button
+                className="btn btn-danger"
+                type="button"
+                onClick={() => handleDelete(appliance)}
+              >
+                Eliminar
+              </button>
             </div>
           </div>
         ))}

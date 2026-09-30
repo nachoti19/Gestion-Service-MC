@@ -28,8 +28,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  createWindow();
-
   registerItemHandlers();
   registerClientHandler();
   registerApplianceHandler();

@@ -7,6 +7,7 @@ import ViewClient from "./components/bodyClients/DetailsClient";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import StockEditForm from "../../Turnos-Lavarropas/src/components/bodyItems/IndexForm";
 import ClientFormEdit from "../../Turnos-Lavarropas/src/components/bodyClients/IndexForm";
+import ApplianceEditForm from "../src/components/bodyAppliance/ApplianceForm";
 import "./App.css";
 
 function App() {
@@ -28,6 +29,15 @@ function App() {
               <Route path="/client" element={<BodyClients />} />
               <Route path="/client/:id" element={<ViewClient />} />
               <Route path="/client/edit/:id" element={<ClientFormEdit />} />
+              {/*CLIENTS-APPLIANCE*/}
+              <Route
+                path="/client/:client_id/appliance/:appliance_id/edit"
+                element={<ApplianceEditForm />}
+              ></Route>
+              <Route
+                path="/client/:client_id/appliance/new"
+                element={<ApplianceEditForm />}
+              ></Route>
               {/* REPORTS */}
               <Route path="/report" element={<BodyReports />} />
               <Route path="/reportList" element={<BodyReportList />} />

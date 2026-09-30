@@ -194,24 +194,6 @@ function IndexForm({ onClose }: Props) {
             onChange={handleChange}
           />
         </div>
-
-        <div className="mb-3">
-          <label htmlFor="inputState" className="form-label">
-            Aca cuando tenga la base de datos se van a mostrar los equipos que
-            tiene el cliente
-          </label>
-          <select
-            name="equipo"
-            id="inputState"
-            className="form-select"
-            onChange={handleChange}
-          >
-            <option value="">Elija una opción</option>
-            <option value="Horno Eléctrico">Horno eléctrico</option>
-            <option value="Lavarropas">Lavarropas</option>
-            <option value="Televisor">Televisor</option>
-          </select>
-        </div>
         <div>
           <button type="submit" className="btn btn-success me-1">
             {esEdicion ? "Guardar Cambio" : "Agregar Cliente"}
@@ -232,13 +214,15 @@ function IndexForm({ onClose }: Props) {
             </NavLink>
           )}
 
-          <button
-            className="btn btn-danger me-1"
-            type="button"
-            onClick={handleDelete}
-          >
-            Eliminar
-          </button>
+          {esEdicion && (
+            <button
+              className="btn btn-danger me-1"
+              type="button"
+              onClick={handleDelete}
+            >
+              Eliminar
+            </button>
+          )}
         </div>
       </form>
     </div>

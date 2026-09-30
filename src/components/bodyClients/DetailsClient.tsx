@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 import IndexModal from "../modal/Index";
-import ApplianceForm from "./ApplianceForm";
+import ApplianceForm from "../bodyAppliance/ApplianceForm";
 import "./detailsClient.css";
 import ApplianceList from "../bodyAppliance/ApplianceList";
 
@@ -10,18 +10,41 @@ type Props = {};
 
 function DetailsClient({}: Props) {
   const { id } = useParams();
-  const location = useLocation();
-  const client = location.state?.client;
   const navigate = useNavigate();
 
-  const handleDelete = async () => {
-    if (!client) {
-      console.log("no hay cliente para eliminar", client);
-      return;
-    }
+  const [client, setClient] = useState<any>(null);
+  const [showForm, setShowForm] = useState(false);
 
+  useEffect(() => {
+    const loadClient = async () => {
+      if (!id) return;
+
+      try {
+        const result = await window.electronAPI.getClientById(Number(id));
+
+        console.log("Cliente obtenido:", result);
+
+        setClient(result);
+      } catch (error) {
+        console.error("Error al obtener el cliente:", error);
+      }
+    };
+
+    loadClient();
+  }, [id]);
+
+  console.log("ID del cliente:", id);
+  console.log("Cliente:", client);
+
+  if (!client) {
+    return <div>Cargando cliente...</div>;
+  }
+
+  const handleDelete = async () => {
     const confirmar = window.confirm(
-      `Esta seguro que quiere eliminar el cliente "${client.name} ${client.surname}"`,
+      `¿Está seguro que quiere eliminar el cliente "${client.name} ${client.surname}"?
+      
+ADVERTENCIA: Eliminar el cliente eliminará los electrodomésticos asociados.`,
     );
 
     if (!confirmar) return;
@@ -30,20 +53,15 @@ function DetailsClient({}: Props) {
       const result = await window.electronAPI.deleteClient(client.id);
 
       if (result.changes > 0) {
-        console.log("se elimino el cliente");
+        console.log("Se eliminó el cliente");
         navigate("/client");
       } else {
-        console.log("no se encontro el cliente");
+        console.log("No se encontró el cliente");
       }
     } catch (error) {
-      console.log("error al borrar el cliente", error);
+      console.log("Error al borrar el cliente", error);
     }
   };
-
-  console.log("ID:", id);
-  console.log("Client:", client);
-
-  const [showForm, setShowForm] = useState(false);
 
   return (
     <>
@@ -93,8 +111,14 @@ function DetailsClient({}: Props) {
         <div className="d-flex justify-content-between">
           <h1>EQUIPOS DEL CLIENTE</h1>
           <div>
+            <NavLink
+              to={`/client/${client.id}/appliance/new`}
+              className="btn btn-success me-1"
+            >
+              Agregar
+            </NavLink>
             <button
-              className="btn btn-success"
+              className="btn btn-success me-1"
               onClick={() => setShowForm(true)}
             >
               AGREGAR EQUIPO
@@ -106,7 +130,7 @@ function DetailsClient({}: Props) {
       {showForm && (
         <IndexModal>
           <ApplianceForm
-            client={client.id}
+            clientModal={client.id}
             onClose={() => {
               setShowForm(false);
             }}

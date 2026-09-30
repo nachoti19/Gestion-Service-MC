@@ -83,8 +83,19 @@ declare global {
         changes: number;
       }>;
 
+      getClientById: (id: number) => Promise<{
+        id: number;
+        name: string;
+        surname: string;
+        phone: number;
+        adress: string;
+        details: string;
+        city: string;
+      }>;
+
       //INICIO SECCION ELECTRODOMESTICOS
       addAppliance: (appliance: {
+        type: string;
         brand: string;
         model: string;
         serial_number: string;
@@ -94,6 +105,7 @@ declare global {
       getAllAppliance: () => Promise<
         {
           id: number;
+          type: string;
           brand: string;
           model: string;
           serial_number: string;
@@ -103,6 +115,7 @@ declare global {
 
       updateAppliance: (appliance: {
         id: number;
+        type: string;
         brand: string;
         model: string;
         serial_number: string;
@@ -114,6 +127,7 @@ declare global {
       getApplianceByClient: (client_id: number) => Promise<
         {
           id: number;
+          type: string;
           brand: string;
           model: string;
           serial_number: string;

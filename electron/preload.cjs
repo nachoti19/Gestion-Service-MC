@@ -48,6 +48,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return ipcRenderer.invoke("client:delete", id);
   },
 
+  getClientById: (id) => {
+    return ipcRenderer.invoke("client:getById", id);
+  },
+
   //=======================
   // ELECTRODOMESTICO
   //=======================

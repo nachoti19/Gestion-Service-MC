@@ -34,7 +34,6 @@ function CardClient({ client }: Props) {
             <NavLink
               className="btn btn-primary me-1"
               to={`/client/${client.id}`}
-              state={{ client }}
             >
               ver mas
             </NavLink>
