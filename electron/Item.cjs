@@ -3,34 +3,51 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 
-const { db } = require("./database.cjs");
+const { db, getOrCreateTypeId } = require("./database.cjs");
+
+const IMAGES_DIR = () => path.join(app.getPath("userData"), "images");
 
 function guardarImagen(originalImage) {
   if (!originalImage) {
-    console.log("No se recibió ninguna imagen");
     return null;
   }
 
-  const imagesPath = path.join(app.getPath("userData"), "images");
+  const imagesPath = IMAGES_DIR();
 
   if (!fs.existsSync(imagesPath)) {
     fs.mkdirSync(imagesPath, { recursive: true });
   }
 
   const extension = path.extname(originalImage).toLowerCase();
-
   const imageName = `${crypto.randomUUID()}${extension}`;
 
-  const destinationPath = path.join(imagesPath, imageName);
-
-  console.log("Imagen original:", originalImage);
-  console.log("Destino:", destinationPath);
-
-  fs.copyFileSync(originalImage, destinationPath);
-
-  console.log("Imagen guardada correctamente:", imageName);
+  fs.copyFileSync(originalImage, path.join(imagesPath, imageName));
 
   return imageName;
+}
+
+function borrarImagen(imageName) {
+  if (!imageName || imageName === "imagen") return;
+
+  const imagePath = path.join(IMAGES_DIR(), imageName);
+
+  if (fs.existsSync(imagePath)) {
+    fs.unlinkSync(imagePath);
+  }
+}
+
+function validateItem({ name, price, quantity }) {
+  if (!String(name ?? "").trim()) {
+    throw new Error("El nombre es obligatorio");
+  }
+
+  if (!Number.isFinite(price) || price < 0) {
+    throw new Error("El precio no es válido");
+  }
+
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    throw new Error("El stock debe ser un número entero mayor o igual a 0");
+  }
 }
 
 // ======================================
@@ -38,206 +55,122 @@ function guardarImagen(originalImage) {
 // ======================================
 
 function registerItemHandlers() {
-  // ======================================
-  // OBTENER TODOS LOS ITEMS
-  // ======================================
-
   ipcMain.handle("item:getAll", () => {
-    const result = db
+    return db
       .prepare(
-        `
-      SELECT *
-      FROM item
-      ORDER BY id DESC
-    `,
+        `SELECT i.id, i.name, i.price, i.quantity, i.url_image, t.name AS type
+         FROM item i
+         JOIN appliance_type t ON t.id = i.type_id
+         WHERE i.deleted = 0
+         ORDER BY i.id DESC`,
       )
       .all();
-
-    return result;
   });
-
-  // ======================================
-  // AGREGAR ITEM
-  // ======================================
 
   ipcMain.handle("item:add", (event, item) => {
-    try {
-      console.log("Item recibido desde React:", item);
+    const { name, price, quantity, type, url_image } = item;
 
-      const { name, price, quantity, type, url_image } = item;
+    validateItem({ name, price, quantity });
 
-      let imageName = "imagen";
+    const typeId = getOrCreateTypeId(type);
 
-      if (url_image) {
-        imageName = guardarImagen(url_image);
-      }
+    let imageName = "imagen";
 
-      const result = db
-        .prepare(
-          `
-        INSERT INTO item (
-          name,
-          price,
-          quantity,
-          type,
-          url_image
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `,
-        )
-        .run(name, price, quantity, type, imageName);
-
-      console.log("Item agregado:", result.lastInsertRowid);
-
-      return {
-        id: result.lastInsertRowid,
-      };
-    } catch (error) {
-      console.error("Error al agregar item:", error);
-
-      throw error;
+    if (url_image) {
+      imageName = guardarImagen(url_image) || "imagen";
     }
-  });
 
-  // ======================================
-  // ACTUALIZAR ITEM
-  // ======================================
+    const result = db
+      .prepare(
+        `INSERT INTO item (name, price, quantity, type_id, url_image)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(String(name).trim(), price, quantity, typeId, imageName);
+
+    return { id: result.lastInsertRowid };
+  });
 
   ipcMain.handle("item:update", (event, item) => {
-    try {
-      console.log("========== UPDATE ITEM ==========");
+    const { id, name, price, quantity, type, url_image, old_url_image } = item;
 
-      console.log("Item recibido:", item);
+    validateItem({ name, price, quantity });
 
-      const { id, name, price, quantity, type, url_image, old_url_image } =
-        item;
+    const typeId = getOrCreateTypeId(type);
 
-      let imageName = old_url_image || "imagen";
+    let imageName = old_url_image || "imagen";
 
-      // Si seleccionó una imagen nueva
-      if (url_image && url_image !== old_url_image) {
-        console.log("Se detectó una imagen nueva");
+    // Si seleccionó una imagen nueva
+    if (url_image && url_image !== old_url_image) {
+      const nuevaImagen = guardarImagen(url_image);
 
-        const nuevaImagen = guardarImagen(url_image);
-
-        if (!nuevaImagen) {
-          throw new Error("No se pudo guardar la nueva imagen");
-        }
-
-        imageName = nuevaImagen;
-
-        // Eliminar imagen anterior
-        if (old_url_image && old_url_image !== "imagen") {
-          const oldImagePath = path.join(
-            app.getPath("userData"),
-            "images",
-            old_url_image,
-          );
-
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-
-            console.log("Imagen anterior eliminada:", oldImagePath);
-          }
-        }
+      if (!nuevaImagen) {
+        throw new Error("No se pudo guardar la nueva imagen");
       }
 
-      const result = db
-        .prepare(
-          `
-        UPDATE item
-        SET
-          name = ?,
-          price = ?,
-          quantity = ?,
-          type = ?,
-          url_image = ?
-        WHERE id = ?
-      `,
-        )
-        .run(name, price, quantity, type, imageName, id);
-
-      console.log("Cambios realizados:", result.changes);
-
-      return {
-        changes: result.changes,
-      };
-    } catch (error) {
-      console.error("Error en update item:", error);
-
-      throw error;
+      imageName = nuevaImagen;
     }
+
+    const result = db
+      .prepare(
+        `UPDATE item SET
+           name = ?,
+           price = ?,
+           quantity = ?,
+           type_id = ?,
+           url_image = ?
+         WHERE id = ?`,
+      )
+      .run(String(name).trim(), price, quantity, typeId, imageName, id);
+
+    // Recién cuando se guardó bien, borramos la imagen anterior
+    if (imageName !== (old_url_image || "imagen")) {
+      borrarImagen(old_url_image);
+    }
+
+    return { changes: result.changes };
   });
 
-  // ======================================
-  // ELIMINAR ITEM
-  // ======================================
-
+  // Si el repuesto ya se usó en una venta o presupuesto no se puede borrar
+  // sin romper el historial: se oculta (borrado lógico).
   ipcMain.handle("item:delete", (event, id) => {
-    try {
-      // Primero obtenemos el item
-      const item = db
-        .prepare(
-          `
-        SELECT url_image
-        FROM item
-        WHERE id = ?
-      `,
-        )
-        .get(id);
+    const item = db
+      .prepare("SELECT url_image FROM item WHERE id = ?")
+      .get(id);
 
-      if (!item) {
-        return {
-          changes: 0,
-        };
-      }
+    if (!item) {
+      return { changes: 0, archived: false };
+    }
 
-      // Eliminamos de SQLite
+    const used = db
+      .prepare(
+        `SELECT 1 AS used FROM sale_item WHERE item_id = ?
+         UNION
+         SELECT 1 AS used FROM budget_item WHERE item_id = ?`,
+      )
+      .get(id, id);
+
+    if (used) {
       const result = db
-        .prepare(
-          `
-        DELETE FROM item
-        WHERE id = ?
-      `,
-        )
+        .prepare("UPDATE item SET deleted = 1, quantity = 0 WHERE id = ?")
         .run(id);
 
-      // Eliminamos también la imagen
-      if (result.changes > 0 && item.url_image && item.url_image !== "imagen") {
-        const imagePath = path.join(
-          app.getPath("userData"),
-          "images",
-          item.url_image,
-        );
-
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
-
-          console.log("Imagen eliminada:", imagePath);
-        }
-      }
-
-      return {
-        changes: result.changes,
-      };
-    } catch (error) {
-      console.error("Error al eliminar item:", error);
-
-      throw error;
+      return { changes: result.changes, archived: true };
     }
-  });
 
-  // ======================================
-  // SELECCIONAR IMAGEN
-  // ======================================
+    const result = db.prepare("DELETE FROM item WHERE id = ?").run(id);
+
+    if (result.changes > 0) {
+      borrarImagen(item.url_image);
+    }
+
+    return { changes: result.changes, archived: false };
+  });
 
   ipcMain.handle("image:select", async () => {
     try {
       const result = await dialog.showOpenDialog({
         title: "Seleccione una imagen",
-
         properties: ["openFile"],
-
         filters: [
           {
             name: "Imágenes",
@@ -250,21 +183,12 @@ function registerItemHandlers() {
         return null;
       }
 
-      const originalImage = result.filePaths[0];
-
-      console.log("Imagen seleccionada:", originalImage);
-
-      return originalImage;
+      return result.filePaths[0];
     } catch (error) {
       console.error("Error al seleccionar imagen:", error);
-
       return null;
     }
   });
-
-  // ======================================
-  // OBTENER IMAGEN PARA MOSTRAR EN REACT
-  // ======================================
 
   ipcMain.handle("image:getData", (event, imageName) => {
     try {
@@ -272,13 +196,10 @@ function registerItemHandlers() {
         return null;
       }
 
-      const imagesPath = path.join(app.getPath("userData"), "images");
-
-      const imagePath = path.join(imagesPath, imageName);
+      const imagePath = path.join(IMAGES_DIR(), imageName);
 
       if (!fs.existsSync(imagePath)) {
         console.error("No existe la imagen:", imagePath);
-
         return null;
       }
 
@@ -286,28 +207,17 @@ function registerItemHandlers() {
 
       const mimeTypes = {
         ".jpg": "image/jpeg",
-
         ".jpeg": "image/jpeg",
-
         ".png": "image/png",
-
         ".webp": "image/webp",
-
         ".gif": "image/gif",
       };
 
       const mimeType = mimeTypes[extension] || "application/octet-stream";
 
-      const imageBuffer = fs.readFileSync(imagePath);
-
-      return `
-          data:${mimeType};
-          base64,
-          ${imageBuffer.toString("base64")}
-        `.replace(/\s/g, "");
+      return `data:${mimeType};base64,${fs.readFileSync(imagePath).toString("base64")}`;
     } catch (error) {
       console.error("Error al cargar imagen:", error);
-
       return null;
     }
   });

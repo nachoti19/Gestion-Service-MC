@@ -1,83 +1,37 @@
-<<<<<<< HEAD
+# Gestión Service MC
 
-# React + TypeScript + Vite
+Aplicación de escritorio (React + Vite + Electron + SQLite) para la gestión de un service de electrodomésticos.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Secciones
 
-Currently, two official plugins are available:
+- **Registro de Stock**: repuestos en cards con edición en la misma card, aviso de stock bajo, búsqueda y venta particular con carrito.
+- **Clientes**: alta/edición, borrado lógico (con restauración y botón BORRADO COMPLETO), equipos por cliente, historial de reparaciones por equipo y generación de presupuestos.
+- **Historial**: presupuestos y ventas particulares con búsqueda por texto y por fecha (exacta o rango), cambio de estado y visor del PDF.
+- **Informe de Repuestos**: repuestos usados entre dos fechas, con los presupuestos pendientes aparte para decidir si se piden.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Desarrollo
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+npm install
+npm run dev            # terminal 1 (Vite)
+npm run electron:dev   # terminal 2 (Electron)
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Si `better-sqlite3` falla después de instalar, ejecutar `npx @electron/rebuild`.
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+## Compilar el instalador
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+npm run electron:build
 ```
 
-=======
+## Estructura
 
-# Gestion-Service-MC
+- `electron/`: base de datos (`database.cjs`), handlers IPC por entidad y generación/lectura de PDF (`pdfBuilder.cjs`).
+- `assets/pdf/`: plantillas del Informe Técnico (`sin_intermediario.pdf` y `seguro_base.pdf`).
+- `src/components/`: pantallas de la interfaz.
 
-Aplicacion desarrollada para la gestion de stock y automatizacion de presupuestos
+## Notas
 
-> > > > > > > fa717b146a7d348965c723b225589a35759af3ee
+- El esquema de la base se versiona con `SCHEMA_VERSION` en `electron/database.cjs`. Subir ese número recrea las tablas (solo hacerlo mientras no haya datos reales).
+- Teléfono del service para el pie de los PDF particulares y sin intermediario: `SERVICE_PHONE` en `electron/pdfBuilder.cjs`.

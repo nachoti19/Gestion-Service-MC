@@ -1,10 +1,16 @@
 import McLogo from "../../assets/mc-logo.png";
 import { NavLink } from "react-router-dom";
+import ThemeToggle from "../common/ThemeToggle";
 import "./Style.css";
 
-type Props = {};
+const links = [
+  { to: "/stock", label: "Registro de Stock" },
+  { to: "/client", label: "Clientes" },
+  { to: "/history", label: "Historial" },
+  { to: "/parts-report", label: "Informe de Repuestos" },
+];
 
-function NavBar({}: Props) {
+function NavBar() {
   return (
     <div className="d-flex align-items-start service-navbar" id="nav">
       <div
@@ -14,38 +20,20 @@ function NavBar({}: Props) {
         aria-orientation="vertical"
       >
         <img src={McLogo} alt="Logo" />
-        <NavLink
-          className={({ isActive }) =>
-            `navButton nav-link ${isActive ? "active" : ""}`
-          }
-          to="/stock"
-        >
-          Registro de Stock
-        </NavLink>
-        <NavLink
-          className={({ isActive }) =>
-            `navButton nav-link ${isActive ? "active" : ""}`
-          }
-          to="/client"
-        >
-          Clientes
-        </NavLink>
-        <NavLink
-          className={({ isActive }) =>
-            `navButton nav-link ${isActive ? "active" : ""}`
-          }
-          to="/report"
-        >
-          Generar Presupuesto
-        </NavLink>
-        <NavLink
-          className={({ isActive }) =>
-            `navButton nav-link ${isActive ? "active" : ""}`
-          }
-          to="/reportList"
-        >
-          Historial
-        </NavLink>
+        {links.map((link) => (
+          <NavLink
+            key={link.to}
+            className={({ isActive }) =>
+              `navButton nav-link ${isActive ? "active" : ""}`
+            }
+            to={link.to}
+          >
+            {link.label}
+          </NavLink>
+        ))}
+        <div className="ms-3 mt-4">
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

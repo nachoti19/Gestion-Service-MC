@@ -1,5 +1,5 @@
 {
-  "name": "turnos-lavarropas",
+  "name": "ServiceMC",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,22 +14,29 @@
   },
   "main": "electron.cjs",
   "build": {
-    "appId": "com.turnoslavarropas.app",
-    "productName": "Turnos Lavarropas",
+    "appId": "com.servicemc.app",
+    "productName": "ServiceMC",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
       "electron.cjs",
+      "electron/**/*",
+      "assets/**/*",
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "src/assets/mc-logo.ico"
     }
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.6.205",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3"

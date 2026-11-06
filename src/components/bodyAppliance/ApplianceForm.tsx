@@ -1,198 +1,105 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import type { Appliance } from "../../models/Appliance";
+import TypeSelect from "../common/TypeSelect";
+import { errorMessage } from "../../utils/format";
 
 type Props = {
-  clientModal?: number;
-  onClose?: () => void;
+  clientId: number;
+  appliance?: Appliance;
+  types: string[];
+  onClose: (saved: boolean) => void;
 };
 
-function ApplianceForm({ onClose, clientModal }: Props) {
-  const { client_id, appliance_id } = useParams();
-
-  const clientId = clientModal ?? Number(client_id);
-  const applianceId = Number(appliance_id);
-
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const handleCancel = () => {
-    console.log("clientId:", clientId);
-    console.log("applianceId:", applianceId);
-
-    if (onClose) {
-      onClose();
-    } else {
-      navigate(`/client/${clientId}`);
-    }
-  };
-
-  const applianceEdit = location.state?.appliance;
-  const esEdicion = Boolean(applianceEdit);
-
-  const [formData, setFormData] = useState({
-    type: "",
-    brand: "",
-    model: "",
-    serial_number: "",
-    client_id: clientId,
+// Formulario para agregar o editar un equipo de un cliente (dentro de un modal)
+function ApplianceForm({ clientId, appliance, types, onClose }: Props) {
+  const [form, setForm] = useState({
+    type: appliance?.type ?? "",
+    brand: appliance?.brand ?? "",
+    model: appliance?.model ?? "",
+    serial_number: appliance?.serial_number ?? "",
   });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (applianceEdit) {
-      setFormData({
-        type: applianceEdit.type || "",
-        brand: applianceEdit.brand || "",
-        model: applianceEdit.model || "",
-        serial_number: applianceEdit.serial_number || "",
-        client_id: clientId,
-      });
-    }
-  }, [applianceEdit]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("Voy a volver a:", `/client/${clientId}`);
-    console.log("clientId:", clientId);
-    console.log("clientModal:", clientModal);
+    if (!form.type.trim()) return setError("Elegí el tipo de equipo");
+    if (!form.brand.trim()) return setError("Ingresá la marca");
 
-    if (!clientId || Number.isNaN(clientId)) {
-      console.error("No se recibió un client_id válido");
-      return;
-    }
+    setSaving(true);
+    setError("");
+
+    const data = {
+      type: form.type.trim(),
+      brand: form.brand.trim(),
+      model: form.model.trim(),
+      serial_number: form.serial_number.trim(),
+      client_id: clientId,
+    };
 
     try {
-      if (esEdicion) {
-        const result = await window.electronAPI.updateAppliance({
-          id: applianceId,
-          type: formData.type,
-          brand: formData.brand,
-          model: formData.model,
-          serial_number: formData.serial_number,
-          client_id: clientId,
-        });
-
-        console.log("Electrodoméstico actualizado:", result);
+      if (appliance) {
+        await window.electronAPI.updateAppliance({ id: appliance.id, ...data });
       } else {
-        const result = await window.electronAPI.addAppliance({
-          type: formData.type,
-          brand: formData.brand,
-          model: formData.model,
-          serial_number: formData.serial_number,
-          client_id: clientId,
-        });
-
-        console.log("Electrodoméstico agregado:", result);
+        await window.electronAPI.addAppliance(data);
       }
 
-      if (onClose) {
-        onClose();
-      } else {
-        navigate(`/client/${clientId}`);
-      }
-    } catch (error) {
-      console.error("Error al agregar o editar el electrodoméstico:", error);
+      onClose(true);
+    } catch (err) {
+      setError(errorMessage(err));
+      setSaving(false);
     }
   };
+
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="inputState" className="form-label">
-          Tipo de equipo
-        </label>
-        <select
-          name="type"
-          id="inputState"
-          className="form-select"
-          value={formData.type}
-          onChange={handleChange}
-        >
-          <option value="">Elija una opción</option>
-          <option value="Horno Eléctrico">Horno eléctrico</option>
-          <option value="Lavarropas">Lavarropas</option>
-          <option value="Televisor">Televisor</option>
-        </select>
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Marca del equipo</label>
-        <input
-          type="text"
-          name="brand"
-          className="form-control"
-          value={formData.brand}
-          onChange={handleChange}
-          aria-describedby="emailHelp"
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Modelo</label>
-        <input
-          type="text"
-          className="form-control"
-          name="model"
-          onChange={handleChange}
-          value={formData.model}
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Numero de Serie</label>
-        <input
-          type="text"
-          className="form-control"
-          name="serial_number"
-          onChange={handleChange}
-          value={formData.serial_number}
-        />
-        <div id="emailHelp" className="form-text">
-          <strong>
-            Este numero va a ser el identificador del equipo si no tiene hace
-            click aca:{"  "}{" "}
-            <p>
-              <a
-                href="#"
-                className="link-dark link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover"
-              >
-                Generar numero de serie
-              </a>
-            </p>
-          </strong>
+    <div className="p-4">
+      <h1 className="modal-title fs-5 mb-3">
+        {appliance ? "Editar equipo" : "Agregar equipo"}
+      </h1>
+
+      <form onSubmit={handleSubmit}>
+        <div className="mb-2">
+          <label className="form-label mb-0">Tipo de equipo</label>
+          <TypeSelect
+            types={types}
+            value={form.type}
+            onChange={(type) => setForm((prev) => ({ ...prev, type }))}
+          />
         </div>
-      </div>
+        <div className="mb-2">
+          <label className="form-label mb-0">Marca</label>
+          <input name="brand" className="form-control" value={form.brand} onChange={handleChange} />
+        </div>
+        <div className="mb-2">
+          <label className="form-label mb-0">Modelo</label>
+          <input name="model" className="form-control" value={form.model} onChange={handleChange} />
+        </div>
+        <div className="mb-3">
+          <label className="form-label mb-0">
+            Número de serie <small className="text-muted">(opcional, se puede completar después)</small>
+          </label>
+          <input
+            name="serial_number"
+            className="form-control"
+            value={form.serial_number}
+            onChange={handleChange}
+          />
+        </div>
 
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id="exampleCheck1"
-        />
-        <label className="form-check-label" htmlFor="exampleCheck1">
-          Check me out
-        </label>
-      </div>
+        {error && <div className="alert alert-danger py-2">{error}</div>}
 
-      {esEdicion ? (
-        <button type="submit" className="btn btn-success me-1">
-          Guardar Cambios
+        <button type="submit" className="btn btn-success me-1" disabled={saving}>
+          {appliance ? "Guardar cambios" : "Agregar"}
         </button>
-      ) : (
-        <button type="submit" className="btn btn-success me-1">
-          Agregar
+        <button type="button" className="btn btn-danger" onClick={() => onClose(false)}>
+          Cancelar
         </button>
-      )}
-      <button type="button" className="btn btn-danger" onClick={handleCancel}>
-        Cancelar
-      </button>
-    </form>
+      </form>
+    </div>
   );
 }
 

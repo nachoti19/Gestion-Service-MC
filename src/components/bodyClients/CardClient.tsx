@@ -1,53 +1,55 @@
-import "bootstrap-icons/font/bootstrap-icons.css";
-import "../bodyReports/Index";
+import { Link } from "react-router-dom";
 import type { Client } from "../../models/Client";
-import { NavLink } from "react-router-dom";
 
 type Props = {
   client: Client;
+  isDeleted?: boolean;
+  onRestore?: (client: Client) => void;
+  onDeletePermanently?: (client: Client) => void;
 };
 
-function CardClient({ client }: Props) {
+function CardClient({ client, isDeleted = false, onRestore, onDeletePermanently }: Props) {
   return (
-    <div className="col">
-      <div className="card h-100 shadow-sm">
-        <div className="card-body d-flex flex-column justify-content-between">
+    <div className="col pt-4">
+      <div className={`card h-100 shadow-sm ${isDeleted ? "border-danger" : ""}`}>
+        <div className="card-body text-start">
           <h5 className="card-title">
             {client.name} {client.surname}
+            {isDeleted && <span className="badge text-bg-danger ms-2">Eliminado</span>}
           </h5>
-          <p className="card-text">
-            <i className="bi bi-geo-alt-fill me-1"></i>
-            {client.adress}
-          </p>
-          <p className="card-text">
-            <i className="bi bi-telephone-fill me-1"></i>
+          <p className="mb-1">
+            <i className="bi bi-telephone me-2"></i>
             {client.phone}
           </p>
+          <p className="mb-1">
+            <i className="bi bi-geo-alt me-2"></i>
+            {client.adress}, {client.city}
+          </p>
           {client.details && (
-            <p className="card-text">
-              <i className="bi bi-building-fill"></i>
+            <p className="mb-1 text-muted small">
+              <i className="bi bi-info-circle me-2"></i>
               {client.details}
             </p>
           )}
-
-          <div>
-            <NavLink
-              className="btn btn-primary me-1"
-              to={`/client/${client.id}`}
-            >
-              ver mas
-            </NavLink>
-            <NavLink
-              className="btn btn-primary me-1"
-              to={`/client/edit/${client.id}`}
-              state={{ client }}
-            >
-              editar
-            </NavLink>
-            <a href="../bodyReports/Index/" className="btn btn-primary">
-              Generar Presupuesto
-            </a>
-          </div>
+        </div>
+        <div className="card-footer d-flex flex-wrap gap-1">
+          {isDeleted ? (
+            <>
+              <button className="btn btn-success btn-sm" onClick={() => onRestore?.(client)}>
+                Restaurar
+              </button>
+              <button
+                className="btn btn-outline-danger btn-sm ms-auto"
+                onClick={() => onDeletePermanently?.(client)}
+              >
+                BORRADO COMPLETO
+              </button>
+            </>
+          ) : (
+            <Link className="btn btn-primary btn-sm" to={`/client/${client.id}`}>
+              Ver más
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -1,85 +1,108 @@
-const { ipcMain, dialog, app } = require("electron");
+const { ipcMain } = require("electron");
 
 const { db } = require("./database.cjs");
+const { restockPendingBudgetsOf } = require("./Budget.cjs");
+
+const text = (value) => String(value ?? "").trim();
+
+function validateClient({ name, surname, phone, adress }) {
+  if (!text(name)) throw new Error("El nombre es obligatorio");
+  if (!text(surname)) throw new Error("El apellido es obligatorio");
+  if (!text(phone)) throw new Error("El celular es obligatorio");
+  if (!text(adress)) throw new Error("La dirección es obligatoria");
+}
+
+const softDeleteClient = db.transaction((id) => {
+  db.prepare("UPDATE appliance SET deleted = 1 WHERE client_id = ?").run(id);
+  return db.prepare("UPDATE client SET deleted = 1 WHERE id = ?").run(id);
+});
+
+const restoreClient = db.transaction((id) => {
+  db.prepare("UPDATE appliance SET deleted = 0 WHERE client_id = ?").run(id);
+  return db.prepare("UPDATE client SET deleted = 0 WHERE id = ?").run(id);
+});
+
+// BORRADO COMPLETO: elimina cliente, equipos y presupuestos.
+// Lo reservado en presupuestos pendientes vuelve al stock.
+const deleteClientPermanently = db.transaction((id) => {
+  restockPendingBudgetsOf("client_id", id);
+  return db.prepare("DELETE FROM client WHERE id = ?").run(id);
+});
 
 function registerClientHandler() {
   ipcMain.handle("client:getAll", () => {
-    const result = db
-      .prepare(
-        `
-    SELECT * FROM client ORDER BY id DESC`,
-      )
+    return db
+      .prepare("SELECT * FROM client WHERE deleted = 0 ORDER BY id DESC")
       .all();
-    return result;
+  });
+
+  ipcMain.handle("client:getDeleted", () => {
+    return db
+      .prepare("SELECT * FROM client WHERE deleted = 1 ORDER BY id DESC")
+      .all();
   });
 
   ipcMain.handle("client:add", (event, client) => {
-    console.log("cliente recibido desde react: ", client);
+    validateClient(client);
 
     const { name, surname, phone, adress, details, city } = client;
 
     const result = db
       .prepare(
-        `
-    INSERT INTO client (
-    name, surname, phone, adress, details, city) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO client (name, surname, phone, adress, details, city)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(name, surname, phone, adress, details, city?.trim() || "Tandil");
-
-    console.log("cliente agregado: ", client);
+      .run(
+        text(name),
+        text(surname),
+        text(phone),
+        text(adress),
+        text(details),
+        text(city) || "Tandil",
+      );
 
     return { id: result.lastInsertRowid };
   });
 
   ipcMain.handle("client:update", (event, client) => {
-    try {
-      const { id, name, surname, phone, adress, details, city } = client;
+    validateClient(client);
 
-      const result = db
-        .prepare(
-          `
-      UPDATE client SET 
-      name = ?,
-      surname = ?,
-      phone = ?,
-      adress = ?,
-      details = ?,
-      city = ?
-      WHERE id = ?`,
-        )
-        .run(name, surname, phone, adress, details, city, id);
+    const { id, name, surname, phone, adress, details, city } = client;
 
-      console.log("cambios realizados", result.changes);
-
-      return { changes: result.changes };
-    } catch (error) {
-      console.log("error al actualizar el cliente", client);
-    }
-  });
-
-  ipcMain.handle("client:delete", (event, id) => {
     const result = db
       .prepare(
-        `
-    DELETE FROM client WHERE id = ?`,
+        `UPDATE client SET
+           name = ?, surname = ?, phone = ?, adress = ?, details = ?, city = ?
+         WHERE id = ?`,
       )
-      .run(id);
+      .run(
+        text(name),
+        text(surname),
+        text(phone),
+        text(adress),
+        text(details),
+        text(city) || "Tandil",
+        id,
+      );
 
-    console.log("DELETE result:", result);
     return { changes: result.changes };
   });
 
-  ipcMain.handle("client:getById", (event, id) => {
-    const result = db.prepare(`SELECT * FROM client WHERE id = ?`).get(id);
-    return result;
+  // Borrado lógico (se puede restaurar)
+  ipcMain.handle("client:delete", (event, id) => {
+    return { changes: softDeleteClient(id).changes };
   });
 
-  //EVENTOS DE ELECTRON
+  ipcMain.handle("client:restore", (event, id) => {
+    return { changes: restoreClient(id).changes };
+  });
 
-  app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-      app.quit();
-    }
+  ipcMain.handle("client:deletePermanent", (event, id) => {
+    return { changes: deleteClientPermanently(id).changes };
+  });
+
+  ipcMain.handle("client:getById", (event, id) => {
+    return db.prepare("SELECT * FROM client WHERE id = ?").get(id);
   });
 }
 

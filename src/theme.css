@@ -1,0 +1,65 @@
+/* Ajustes para el tema oscuro (Bootstrap 5.3 usa data-bs-theme en <html>) */
+
+[data-bs-theme="dark"] #nav {
+  background-color: #1d2b36;
+}
+
+[data-bs-theme="dark"] .service-navbar .nav-link {
+  color: #cfe6f3;
+}
+
+[data-bs-theme="dark"] .service-navbar .nav-link.active {
+  background-color: #2f7ea8 !important;
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .main-background {
+  background-color: #14191e;
+}
+
+[data-bs-theme="dark"] .app-title {
+  background-color: #1d2b36;
+}
+
+/* La barra de búsqueda tiene el mismo fondo que la página (sin "caja" de color) */
+[data-bs-theme="dark"] .navbar {
+  background-color: #14191e;
+}
+
+[data-bs-theme="dark"] .form-box-fixed {
+  background-color: #22313d;
+}
+
+[data-bs-theme="dark"] .clientBox {
+  background: #22313d;
+}
+
+/* Impresión del informe de repuestos */
+@media print {
+  #nav,
+  .no-print,
+  .app-title {
+    display: none !important;
+  }
+}
+
+/* Menú lateral y barra de búsqueda fijos al hacer scroll */
+#nav {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}

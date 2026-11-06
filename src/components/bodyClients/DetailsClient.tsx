@@ -1,138 +1,122 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { NavLink } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { Client } from "../../models/Client";
+import ClientForm from "./ClientForm";
 import IndexModal from "../modal/Index";
-import ApplianceForm from "../bodyAppliance/ApplianceForm";
-import "./detailsClient.css";
 import ApplianceList from "../bodyAppliance/ApplianceList";
+import { errorMessage } from "../../utils/format";
+import { useConfirm } from "../common/ConfirmDialog";
 
-type Props = {};
-
-function DetailsClient({}: Props) {
+function DetailsClient() {
   const { id } = useParams();
+  const clientId = Number(id);
   const navigate = useNavigate();
 
-  const [client, setClient] = useState<any>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [client, setClient] = useState<Client | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState("");
+  const { confirm, dialog } = useConfirm();
+
+  const load = useCallback(async () => {
+    try {
+      const data = await window.electronAPI.getClientById(clientId);
+      setClient(data ?? null);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setLoaded(true);
+    }
+  }, [clientId]);
 
   useEffect(() => {
-    const loadClient = async () => {
-      if (!id) return;
-
-      try {
-        const result = await window.electronAPI.getClientById(Number(id));
-
-        console.log("Cliente obtenido:", result);
-
-        setClient(result);
-      } catch (error) {
-        console.error("Error al obtener el cliente:", error);
-      }
-    };
-
-    loadClient();
-  }, [id]);
-
-  console.log("ID del cliente:", id);
-  console.log("Cliente:", client);
-
-  if (!client) {
-    return <div>Cargando cliente...</div>;
-  }
+    load();
+  }, [load]);
 
   const handleDelete = async () => {
-    const confirmar = window.confirm(
-      `¿Está seguro que quiere eliminar el cliente "${client.name} ${client.surname}"?
-      
-ADVERTENCIA: Eliminar el cliente eliminará los electrodomésticos asociados.`,
-    );
+    if (!client) return;
 
-    if (!confirmar) return;
+    const ok = await confirm(
+      `¿Eliminar a ${client.name} ${client.surname}?\n\nSe oculta junto con sus equipos, pero su historial se conserva y se puede restaurar desde Clientes.`,
+      { danger: true, confirmLabel: "Eliminar" },
+    );
+    if (!ok) return;
 
     try {
-      const result = await window.electronAPI.deleteClient(client.id);
-
-      if (result.changes > 0) {
-        console.log("Se eliminó el cliente");
-        navigate("/client");
-      } else {
-        console.log("No se encontró el cliente");
-      }
-    } catch (error) {
-      console.log("Error al borrar el cliente", error);
+      await window.electronAPI.deleteClient(client.id);
+      navigate("/client");
+    } catch (e) {
+      setError(errorMessage(e));
     }
   };
 
+  if (loaded && !client) {
+    return (
+      <>
+        <p className="mt-4">No se encontró el cliente.</p>
+        <Link to="/client" className="btn btn-primary">
+          Volver a clientes
+        </Link>
+      </>
+    );
+  }
+
+  if (!client) return <p className="mt-4 text-muted">Cargando...</p>;
+
   return (
     <>
-      <div className="clientBox rounded p-3">
-        <div className="d-flex justify-content-between mb-5">
-          <div>
-            <h1>
-              <i className="bi bi-person-circle me-1"></i>
-              {client?.name} {client?.surname}
-            </h1>
-            <p className="card-text fs-3">
-              <i className="bi bi-geo-alt-fill me-1"></i>
-              {client.adress}
-            </p>
-            <p className="card-text fs-3">
-              <i className="bi bi-telephone-fill me-1"></i>
-              {client.phone}
-            </p>
-            {client.details && (
-              <p className="card-text fs-3">
-                <i className="bi bi-building-fill"></i>
-                {client.details}
-              </p>
-            )}
-            <p className="card-text fs-3">
-              <i className="bi bi-map me-1"></i>
-              {client.city}
-            </p>
-          </div>
-          <div>
-            <NavLink
-              className="btn btn-success me-1"
-              to={`/client/edit/${client.id}`}
-              state={{ client }}
-            >
-              editar
-            </NavLink>
-            <button
-              className="btn btn-danger me-1"
-              type="button"
-              onClick={handleDelete}
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-        <div className="d-flex justify-content-between">
-          <h1>EQUIPOS DEL CLIENTE</h1>
-          <div>
-            <NavLink
-              to={`/client/${client.id}/appliance/new`}
-              className="btn btn-success me-1"
-            >
-              Agregar
-            </NavLink>
-            <button
-              className="btn btn-success me-1"
-              onClick={() => setShowForm(true)}
-            >
-              AGREGAR EQUIPO
-            </button>
-          </div>
-        </div>
-        <ApplianceList client={client.id} />
+      {dialog}
+      <div className="d-flex align-items-center mt-3 mb-3">
+        <Link to="/client" className="btn btn-outline-secondary btn-sm me-3">
+          <i className="bi bi-arrow-left"></i> Clientes
+        </Link>
+        <h1 className="m-0">
+          {client.name} {client.surname}
+        </h1>
       </div>
-      {showForm && (
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="card text-start mb-4">
+        <div className="card-body">
+          <div className="row">
+            <div className="col-md-3">
+              <small className="text-muted d-block">Celular</small>
+              {client.phone}
+            </div>
+            <div className="col-md-4">
+              <small className="text-muted d-block">Dirección</small>
+              {client.adress}
+            </div>
+            <div className="col-md-2">
+              <small className="text-muted d-block">Ciudad</small>
+              {client.city}
+            </div>
+            <div className="col-md-3">
+              <small className="text-muted d-block">Observaciones</small>
+              {client.details || "—"}
+            </div>
+          </div>
+        </div>
+        <div className="card-footer d-flex gap-1">
+          <button className="btn btn-success btn-sm" onClick={() => setEditing(true)}>
+            Editar cliente
+          </button>
+          <button className="btn btn-outline-danger btn-sm ms-auto" onClick={handleDelete}>
+            <i className="bi bi-trash"></i> Eliminar cliente
+          </button>
+        </div>
+      </div>
+
+      <ApplianceList clientId={client.id} />
+
+      {editing && (
         <IndexModal>
-          <ApplianceForm
-            clientModal={client.id}
-            onClose={() => {
-              setShowForm(false);
+          <ClientForm
+            client={client}
+            onClose={(saved) => {
+              setEditing(false);
+              if (saved) load();
             }}
           />
         </IndexModal>

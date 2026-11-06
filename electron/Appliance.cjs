@@ -1,77 +1,91 @@
-const { ipcMain, dialog, app } = require("electron");
+const { ipcMain } = require("electron");
 
-const { db } = require("./database.cjs");
+const { db, getOrCreateTypeId } = require("./database.cjs");
+const { restockPendingBudgetsOf } = require("./Budget.cjs");
+
+// "type" se devuelve como texto (nombre del tipo) para que el front no cambie.
+const SELECT_APPLIANCE = `
+  SELECT a.id, t.name AS type, a.brand, a.model, a.serial_number, a.client_id
+  FROM appliance a
+  JOIN appliance_type t ON t.id = a.type_id`;
 
 function registerApplianceHandler() {
   ipcMain.handle("appliance:getAll", () => {
-    const result = db
-      .prepare(
-        `
-            SELECT * FROM appliance ORDER BY id DESC`,
-      )
+    return db
+      .prepare(`${SELECT_APPLIANCE} WHERE a.deleted = 0 ORDER BY a.id DESC`)
       .all();
-    return result;
+  });
+
+  ipcMain.handle("appliance:getByClient", (event, client_id, deleted = false) => {
+    return db
+      .prepare(
+        `${SELECT_APPLIANCE} WHERE a.client_id = ? AND a.deleted = ? ORDER BY a.id DESC`,
+      )
+      .all(client_id, deleted ? 1 : 0);
+  });
+
+  ipcMain.handle("appliance:getById", (event, id) => {
+    return db.prepare(`${SELECT_APPLIANCE} WHERE a.id = ?`).get(id);
   });
 
   ipcMain.handle("appliance:add", (event, appliance) => {
-    console.log("Electrodomestico recibido desde react: ", appliance);
-
     const { type, brand, model, serial_number, client_id } = appliance;
+
+    const typeId = getOrCreateTypeId(type);
 
     const result = db
       .prepare(
-        `
-            INSERT INTO appliance(
-            type, brand, model, serial_number, client_id) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO appliance (type_id, brand, model, serial_number, client_id)
+         VALUES (?, ?, ?, ?, ?)`,
       )
-      .run(type, brand, model, serial_number, client_id);
-    console.log("electrodomestico agregado: ", appliance);
+      .run(typeId, brand, model ?? "", serial_number ?? "", client_id);
 
     return { id: result.lastInsertRowid };
   });
 
   ipcMain.handle("appliance:update", (event, appliance) => {
-    try {
-      const { id, type, brand, model, serial_number, client_id } = appliance;
+    const { id, type, brand, model, serial_number, client_id } = appliance;
 
-      const result = db
-        .prepare(
-          `UPDATE appliance SET
-          type =?,
-            brand = ?,
-            model = ?,
-            serial_number = ?,
-            client_id = ?
-            WHERE id = ?`,
-        )
-        .run(type, brand, model, serial_number, client_id, id);
+    const typeId = getOrCreateTypeId(type);
 
-      console.log("cambios realizados: ", result.changes);
-      return { changes: result.changes };
-    } catch (error) {
-      console.log("error al actualizar: ", error);
-    }
-  });
+    const result = db
+      .prepare(
+        `UPDATE appliance SET
+           type_id = ?,
+           brand = ?,
+           model = ?,
+           serial_number = ?,
+           client_id = ?
+         WHERE id = ?`,
+      )
+      .run(typeId, brand, model ?? "", serial_number ?? "", client_id, id);
 
-  ipcMain.handle("appliance:delete", (event, id) => {
-    const result = db.prepare(`DELETE FROM appliance WHERE id = ?`).run(id);
     return { changes: result.changes };
   });
 
-  ipcMain.handle("appliance:getByClient", (event, client_id) => {
+  // Borrado lógico (se puede restaurar)
+  ipcMain.handle("appliance:delete", (event, id) => {
     const result = db
-      .prepare(
-        `
-      SELECT * FROM appliance WHERE client_id = ?`,
-      )
-      .all(client_id);
-    return result;
+      .prepare("UPDATE appliance SET deleted = 1 WHERE id = ?")
+      .run(id);
+    return { changes: result.changes };
   });
 
-  app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-      app.quit();
-    }
+  ipcMain.handle("appliance:restore", (event, id) => {
+    const result = db
+      .prepare("UPDATE appliance SET deleted = 0 WHERE id = ?")
+      .run(id);
+    return { changes: result.changes };
+  });
+
+  // BORRADO COMPLETO: elimina el equipo y sus presupuestos.
+  ipcMain.handle("appliance:deletePermanent", (event, id) => {
+    const remove = db.transaction(() => {
+      restockPendingBudgetsOf("appliance_id", id);
+      return db.prepare("DELETE FROM appliance WHERE id = ?").run(id);
+    });
+
+    return { changes: remove().changes };
   });
 }
 
